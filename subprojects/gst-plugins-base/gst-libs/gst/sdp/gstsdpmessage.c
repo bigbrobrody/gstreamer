@@ -480,6 +480,39 @@ gst_sdp_address_is_multicast (const gchar * nettype, const gchar * addrtype,
 }
 
 /**
+ * gst_sdp_address_is_ssm:
+ * @nettype: a network type
+ * @addrtype: an address type
+ * @addr: an address
+ *
+ * Check if the given @addr is a source-specific multicast address.
+ *
+ * Returns: TRUE when @addr is source-specific multicast.
+ */
+gboolean
+gst_sdp_address_is_ssm (const gchar * nettype, const gchar * addrtype,
+    const gchar * addr)
+{
+  gboolean ret = FALSE;
+  GInetAddress *iaddr;
+
+  g_return_val_if_fail (addr, FALSE);
+
+  /* we only support IN */
+  if (nettype && strcmp (nettype, "IN") != 0)
+    return FALSE;
+
+  /* guard against parse failures */
+  if ((iaddr = g_inet_address_new_from_string (addr)) == NULL)
+    return FALSE;
+
+  ret = g_inet_address_get_is_ssm (iaddr);  /* This function needs to be written. Can't find definition of g_inet_address_get_is_multicast */
+  g_object_unref (iaddr);
+
+  return ret;
+}
+
+/**
  * gst_sdp_message_as_text:
  * @msg: a #GstSDPMessage
  *
@@ -538,6 +571,12 @@ gst_sdp_message_as_text (const GstSDPMessage * msg)
         g_string_append_printf (lines, "/%u", msg->connection.addr_number);
     }
     g_string_append_printf (lines, "\r\n");
+    if (gst_sdp_address_is_ssm (msg->connection.nettype,
+            msg->connection.addrtype, msg->connection.address)) {
+      g_string_append_printf (lines, "a=source-filter: incl %s %s %s %s", msg->connection.nettype,
+          msg->connection.addrtype, msg->connection.address, msg->origin.addr);
+      g_string_append_printf (lines, "\r\n");
+    }
   }
 
   for (i = 0; i < gst_sdp_message_bandwidths_len (msg); i++) {
@@ -2029,6 +2068,12 @@ gst_sdp_media_as_text (const GstSDPMedia * media)
           g_string_append_printf (lines, "/%u", conn->addr_number);
       }
       g_string_append_printf (lines, "\r\n");
+      if (gst_sdp_address_is_ssm (msg->connection.nettype,
+              msg->connection.addrtype, msg->connection.address)) {
+        g_string_append_printf (lines, "a=source-filter: incl %s %s %s %s", msg->connection.nettype,
+            msg->connection.addrtype, msg->connection.address, msg->origin.addr);
+        g_string_append_printf (lines, "\r\n");
+      }
     }
   }
 
