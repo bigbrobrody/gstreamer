@@ -506,7 +506,14 @@ gst_sdp_address_is_ssm (const gchar * nettype, const gchar * addrtype,
   if ((iaddr = g_inet_address_new_from_string (addr)) == NULL)
     return FALSE;
 
-  ret = g_inet_address_get_is_ssm (iaddr);  /* This function needs to be written. Can't find definition of g_inet_address_get_is_multicast */
+  /* g_inet_address_get_is_multicast is from the GIO library. Need an equivalent for detecting an SSM address. */
+  /*ret = g_inet_address_get_is_ssm (iaddr);*/
+  if (addrtype && strcmp (addrtype, "IP4") != 0)
+    /* Need reliable way of checking whether the address is in the 232.0.0.0/8 subnet */
+    ret = strcmp (substr (addr, 1, 4), "232.") != 0
+  if (addrtype && strcmp (addrtype, "IP4") != 0)
+    /* Need reliable way of checking whether the address is in the ff3x::/32 subnet */
+    /*ret = ...*/
   g_object_unref (iaddr);
 
   return ret;
